@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Request } from 'express';
+import { User } from 'src/users/entities/user.entity';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -24,10 +25,10 @@ export class CustomersController {
   @Post()
   create(
     @Body() createCustomerDto: CreateCustomerDto,
-    @Req() request: Request,
+    @Req() request: Request & { user: User },
   ) {
-    const userId = request.user['id'];
-    return this.customersService.create(createCustomerDto, userId);
+    const user = request.user;
+    return this.customersService.create(createCustomerDto, user);
   }
 
   @Get()

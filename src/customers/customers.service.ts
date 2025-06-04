@@ -15,11 +15,18 @@ export class CustomersService {
     private readonly usersRepository: Repository<User>,
   ) {}
 
-  async create(createCustomerDto: CreateCustomerDto, userId: number) {
+  async create(createCustomerDto: CreateCustomerDto, userPayload: User) {
+    const user = await this.usersRepository.findOneBy({ id: userPayload.id });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
     const customer = this.customersRepository.create({
       ...createCustomerDto,
-      user: { id: userId },
+      user,
     });
+
     return this.customersRepository.save(customer);
   }
 

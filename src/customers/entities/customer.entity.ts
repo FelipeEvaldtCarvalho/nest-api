@@ -9,16 +9,16 @@ export class Customer {
   @Column()
   name: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   document: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', nullable: true })
   birthdate: string;
 
-  @Column()
+  @Column({ nullable: true })
   address: string;
 
-  @Column()
+  @Column({ nullable: true })
   phone: string;
 
   @ManyToOne(() => User, (user) => user.customers, { onDelete: 'CASCADE' })

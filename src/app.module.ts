@@ -13,6 +13,7 @@ import { CustomersModule } from './customers/customers.module';
       database: 'db.sqlite',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true, // Note: set to false in production
+      // dropSchema: true,
     }),
     UsersModule,
     AuthModule,
