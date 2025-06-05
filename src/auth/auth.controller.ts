@@ -35,6 +35,9 @@ export class AuthController {
       throw new UnauthorizedException('Token inválido');
     }
 
+    delete user.password;
+    delete user.isActive;
+
     return user;
   }
 }
