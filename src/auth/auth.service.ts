@@ -31,4 +31,13 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
     };
   }
+
+  async verifyToken(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(token);
+      return this.usersService.findOne(payload.sub);
+    } catch (err) {
+      return null;
+    }
+  }
 }
