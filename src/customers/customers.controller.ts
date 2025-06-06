@@ -32,8 +32,9 @@ export class CustomersController {
   }
 
   @Get()
-  findAll() {
-    return this.customersService.findAll();
+  findAll(@Req() request: Request) {
+    const user = request.user as User;
+    return this.customersService.findAll(user);
   }
 
   @Get(':id')

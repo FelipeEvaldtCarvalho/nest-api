@@ -30,8 +30,10 @@ export class CustomersService {
     return this.customersRepository.save(customer);
   }
 
-  findAll() {
-    return this.customersRepository.find({ relations: ['user'] });
+  findAll(user: User) {
+    return this.customersRepository.find({
+      where: { user: { id: user.id } },
+    });
   }
 
   findOne(id: number) {
