@@ -10,11 +10,14 @@ import { DashboardModule } from './dashboard/dashboard.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: 'db.sqlite',
+      type: 'mysql',
+      host: '127.0.0.1',
+      port: 3306,
+      username: 'nest',
+      password: 'nestpass',
+      database: 'nestdb',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // Note: set to false in production
-      // dropSchema: true,
+      synchronize: true, // USAR TRUE SOMENTE EM DESENVOLVIMENTO
     }),
     UsersModule,
     AuthModule,
