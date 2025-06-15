@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CustomersModule } from './customers/customers.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { CounselingModule } from './counseling/counseling.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     AuthModule,
     CustomersModule,
     DashboardModule,
+    CounselingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

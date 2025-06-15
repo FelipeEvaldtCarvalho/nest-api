@@ -5,6 +5,7 @@ import { Customer } from './entities/customer.entity';
 import { User } from 'src/users/entities/user.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { CounselingService } from '../counseling/counseling.service';
 
 @Injectable()
 export class CustomersService {
@@ -13,6 +14,7 @@ export class CustomersService {
     private readonly customersRepository: Repository<Customer>,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly counselingService: CounselingService,
   ) {}
 
   async create(createCustomerDto: CreateCustomerDto, userPayload: User) {
@@ -27,7 +29,9 @@ export class CustomersService {
       user,
     });
 
-    return this.customersRepository.save(customer);
+    const savedCustomer = await this.customersRepository.save(customer);
+    await this.counselingService.createCounselingData(savedCustomer);
+    return savedCustomer;
   }
 
   findAll(user: User) {
