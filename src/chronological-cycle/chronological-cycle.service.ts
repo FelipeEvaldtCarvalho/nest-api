@@ -3,10 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { ChronologicalCycle } from './entities/chronological-cycle.entity';
 import { Customer } from '../customers/entities/customer.entity';
-import {
-  CreateChronologicalCycleDto,
-  UpdateChronologicalCycleDto,
-} from './dto';
 
 @Injectable()
 export class ChronologicalCycleService {
@@ -22,7 +18,6 @@ export class ChronologicalCycleService {
   ): Promise<ChronologicalCycle> {
     const { customerId, order, ...cycleData } = createChronologicalCycleDto;
 
-    // Buscar o customer
     const customer = await this.customerRepository.findOne({
       where: { id: customerId },
     });
@@ -31,13 +26,11 @@ export class ChronologicalCycleService {
       throw new NotFoundException(`Customer with ID ${customerId} not found`);
     }
 
-    // Se order não foi fornecido, calcular automaticamente baseado na data
     let finalOrder = order;
     if (!order) {
       finalOrder = await this.getNextOrder(customerId, cycleData.date);
     }
 
-    // Criar o chronological cycle com o customer
     const chronologicalCycle = this.chronologicalCycleRepository.create({
       ...cycleData,
       customer,
@@ -47,7 +40,6 @@ export class ChronologicalCycleService {
     const savedCycle =
       await this.chronologicalCycleRepository.save(chronologicalCycle);
 
-    // Retornar sem o relacionamento customer
     const { customer: _, ...cycleWithoutCustomer } = savedCycle;
     return cycleWithoutCustomer as ChronologicalCycle;
   }
@@ -83,10 +75,6 @@ export class ChronologicalCycleService {
   ): Promise<ChronologicalCycle[]> {
     const dateString = date;
 
-    console.log(
-      `🔍 Buscando por customerId: ${customerId}, date: ${dateString}`,
-    );
-
     const results = await this.chronologicalCycleRepository.find({
       where: {
         customer: { id: customerId },
@@ -98,7 +86,6 @@ export class ChronologicalCycleService {
       },
     });
 
-    console.log(`📊 Encontrados ${results.length} resultados`);
     return results;
   }
 
@@ -140,7 +127,6 @@ export class ChronologicalCycleService {
     const chronologicalCycle = await this.findOne(id);
     await this.chronologicalCycleRepository.remove(chronologicalCycle);
   }
-  ///date = 2025-06-16
   async getNextOrder(customerId: number, date?: string): Promise<any> {
     if (date) {
       const dateString = date;
