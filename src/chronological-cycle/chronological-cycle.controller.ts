@@ -76,10 +76,10 @@ export class ChronologicalCycleController {
     );
   }
 
-  @Patch('update-order')
-  updateOrder(@Body() orderList: { [key: number]: number }) {
-    return this.chronologicalCycleService.updateOrder(orderList);
-  }
+  // @Patch('update-order')
+  // async updateOrder(@Body() body: any) {
+  //   console.log(body);
+  // }
 
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
