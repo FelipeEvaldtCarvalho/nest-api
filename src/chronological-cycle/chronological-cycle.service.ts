@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ChronologicalCycle } from './entities/chronological-cycle.entity';
 import { Customer } from '../customers/entities/customer.entity';
 import {
@@ -122,6 +122,18 @@ export class ChronologicalCycleService {
     Object.assign(chronologicalCycle, updateChronologicalCycleDto);
 
     return this.chronologicalCycleRepository.save(chronologicalCycle);
+  }
+
+  async updateOrder(orderList: { [key: number]: number }): Promise<void> {
+    const chronologicalCycles = await this.chronologicalCycleRepository.find({
+      where: { id: In(Object.keys(orderList)) },
+    });
+
+    for (const chronologicalCycle of chronologicalCycles) {
+      chronologicalCycle.order = orderList[chronologicalCycle.id];
+    }
+
+    await this.chronologicalCycleRepository.save(chronologicalCycles);
   }
 
   async remove(id: number): Promise<void> {
