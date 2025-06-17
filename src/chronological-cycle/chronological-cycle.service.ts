@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChronologicalCycle } from './entities/chronological-cycle.entity';
+import { Customer } from '../customers/entities/customer.entity';
 import {
   CreateChronologicalCycleDto,
   UpdateChronologicalCycleDto,
@@ -12,15 +13,43 @@ export class ChronologicalCycleService {
   constructor(
     @InjectRepository(ChronologicalCycle)
     private chronologicalCycleRepository: Repository<ChronologicalCycle>,
+    @InjectRepository(Customer)
+    private customerRepository: Repository<Customer>,
   ) {}
 
   async create(
     createChronologicalCycleDto: CreateChronologicalCycleDto,
   ): Promise<ChronologicalCycle> {
-    const chronologicalCycle = this.chronologicalCycleRepository.create(
-      createChronologicalCycleDto,
-    );
-    return this.chronologicalCycleRepository.save(chronologicalCycle);
+    const { customerId, order, ...cycleData } = createChronologicalCycleDto;
+
+    // Buscar o customer
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException(`Customer with ID ${customerId} not found`);
+    }
+
+    // Se order não foi fornecido, calcular automaticamente baseado na data
+    let finalOrder = order;
+    if (!order) {
+      finalOrder = await this.getNextOrder(customerId, cycleData.date);
+    }
+
+    // Criar o chronological cycle com o customer
+    const chronologicalCycle = this.chronologicalCycleRepository.create({
+      ...cycleData,
+      customer,
+      order: finalOrder,
+    });
+
+    const savedCycle =
+      await this.chronologicalCycleRepository.save(chronologicalCycle);
+
+    // Retornar sem o relacionamento customer
+    const { customer: _, ...cycleWithoutCustomer } = savedCycle;
+    return cycleWithoutCustomer as ChronologicalCycle;
   }
 
   async findAll(): Promise<ChronologicalCycle[]> {
@@ -50,15 +79,27 @@ export class ChronologicalCycleService {
 
   async findByCustomerIdAndDate(
     customerId: number,
-    date: Date,
+    date: string,
   ): Promise<ChronologicalCycle[]> {
-    return this.chronologicalCycleRepository.find({
-      where: { customer: { id: customerId }, date },
+    const dateString = date;
+
+    console.log(
+      `🔍 Buscando por customerId: ${customerId}, date: ${dateString}`,
+    );
+
+    const results = await this.chronologicalCycleRepository.find({
+      where: {
+        customer: { id: customerId },
+        date: dateString as any,
+      },
       relations: ['customer'],
       order: {
         order: 'ASC',
       },
     });
+
+    console.log(`📊 Encontrados ${results.length} resultados`);
+    return results;
   }
 
   async findByCustomerId(customerId: number): Promise<ChronologicalCycle[]> {
@@ -87,14 +128,14 @@ export class ChronologicalCycleService {
     const chronologicalCycle = await this.findOne(id);
     await this.chronologicalCycleRepository.remove(chronologicalCycle);
   }
-
-  async getNextOrder(customerId: number, date?: Date): Promise<number> {
+  ///date = 2025-06-16
+  async getNextOrder(customerId: number, date?: string): Promise<any> {
     if (date) {
-      // Se uma data específica for fornecida, obter a próxima ordem para essa data
+      const dateString = date;
       const lastCycle = await this.chronologicalCycleRepository.findOne({
         where: {
           customer: { id: customerId },
-          date: date,
+          date: dateString as any,
         },
         order: { order: 'DESC' },
       });

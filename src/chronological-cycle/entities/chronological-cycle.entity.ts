@@ -1,19 +1,12 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  OneToOne,
-  JoinColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Customer } from '../../customers/entities/customer.entity';
 
-@Entity()
+@Entity('chronological_cycle')
 export class ChronologicalCycle {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @OneToOne(() => Customer, { onDelete: 'CASCADE' })
-  @JoinColumn()
+  @ManyToOne(() => Customer, { onDelete: 'CASCADE' })
   customer: Customer;
 
   // Data

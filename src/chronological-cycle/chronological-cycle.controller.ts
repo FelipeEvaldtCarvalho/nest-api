@@ -46,11 +46,23 @@ export class ChronologicalCycleController {
     @Param('customerId', ParseIntPipe) customerId: number,
     @Param('date') date: string,
   ) {
-    const dateParam = new Date(date);
     return this.chronologicalCycleService.findByCustomerIdAndDate(
+      customerId,
+      date,
+    );
+  }
+
+  @Get('next-order/:customerId')
+  async getNextOrder(
+    @Param('customerId', ParseIntPipe) customerId: number,
+    @Query('date') date?: string,
+  ) {
+    const dateParam = date || undefined;
+    const nextOrder = await this.chronologicalCycleService.getNextOrder(
       customerId,
       dateParam,
     );
+    return { nextOrder };
   }
 
   @Patch(':id')
