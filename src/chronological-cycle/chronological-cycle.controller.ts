@@ -13,8 +13,8 @@ import { ChronologicalCycleService } from './chronological-cycle.service';
 import {
   CreateChronologicalCycleDto,
   UpdateChronologicalCycleDto,
+  UpdateOrderDto,
 } from './dto';
-
 @Controller('chronological-cycle')
 export class ChronologicalCycleController {
   constructor(
@@ -76,10 +76,10 @@ export class ChronologicalCycleController {
     );
   }
 
-  // @Patch('update-order')
-  // async updateOrder(@Body() body: any) {
-  //   console.log(body);
-  // }
+  @Post('order')
+  async updateOrder(@Body() cicles: UpdateOrderDto[]) {
+    return this.chronologicalCycleService.updateOrder(cicles);
+  }
 
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {

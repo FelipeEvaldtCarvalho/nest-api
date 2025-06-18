@@ -3,6 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { ChronologicalCycle } from './entities/chronological-cycle.entity';
 import { Customer } from '../customers/entities/customer.entity';
+import {
+  CreateChronologicalCycleDto,
+  UpdateChronologicalCycleDto,
+  UpdateOrderDto,
+} from './dto';
 
 @Injectable()
 export class ChronologicalCycleService {
@@ -111,14 +116,15 @@ export class ChronologicalCycleService {
     return this.chronologicalCycleRepository.save(chronologicalCycle);
   }
 
-  async updateOrder(orderList: { [key: number]: number }): Promise<void> {
+  async updateOrder(cicles: UpdateOrderDto[]): Promise<void> {
     const chronologicalCycles = await this.chronologicalCycleRepository.find({
-      where: { id: In(Object.keys(orderList)) },
+      where: { id: In(cicles.map((cicle) => cicle.id)) },
     });
 
-    for (const chronologicalCycle of chronologicalCycles) {
-      chronologicalCycle.order = orderList[chronologicalCycle.id];
-    }
+    chronologicalCycles.forEach((chronologicalCycle) => {
+      const cicle = cicles.find((cicle) => cicle.id === chronologicalCycle.id);
+      chronologicalCycle.order = cicle.order;
+    });
 
     await this.chronologicalCycleRepository.save(chronologicalCycles);
   }
@@ -127,6 +133,7 @@ export class ChronologicalCycleService {
     const chronologicalCycle = await this.findOne(id);
     await this.chronologicalCycleRepository.remove(chronologicalCycle);
   }
+
   async getNextOrder(customerId: number, date?: string): Promise<any> {
     if (date) {
       const dateString = date;
@@ -139,7 +146,6 @@ export class ChronologicalCycleService {
       });
       return lastCycle ? lastCycle.order + 1 : 1;
     } else {
-      // Se nenhuma data for fornecida, obter a próxima ordem geral
       const lastCycle = await this.chronologicalCycleRepository.findOne({
         where: { customer: { id: customerId } },
         order: {
