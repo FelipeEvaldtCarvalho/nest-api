@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CustomersModule } from './customers/customers.module';
@@ -11,16 +14,25 @@ import { ChronologicalCycleModule } from './chronological-cycle/chronological-cy
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: '127.0.0.1',
-      port: 3306,
-      username: 'nest',
-      password: 'nestpass',
-      database: 'nestdb',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // USAR TRUE SOMENTE EM DESENVOLVIMENTO
+    ConfigModule.forRoot({
+      isGlobal: true,
     }),
+
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        type: 'mysql',
+        host: config.get<string>('DB_HOST'),
+        port: parseInt(config.get<string>('DB_PORT')),
+        username: config.get<string>('DB_USERNAME'),
+        password: config.get<string>('DB_PASSWORD'),
+        database: config.get<string>('DB_NAME'),
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: config.get<string>('NODE_ENV') === 'development',
+      }),
+    }),
+
     UsersModule,
     AuthModule,
     CustomersModule,
