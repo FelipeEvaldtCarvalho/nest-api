@@ -11,6 +11,7 @@ import { CustomersModule } from './customers/customers.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CounselingModule } from './counseling/counseling.module';
 import { ChronologicalCycleModule } from './chronological-cycle/chronological-cycle.module';
+import { AppointmentsModule } from './appointments/appointments.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { ChronologicalCycleModule } from './chronological-cycle/chronological-cy
     DashboardModule,
     CounselingModule,
     ChronologicalCycleModule,
+    AppointmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
