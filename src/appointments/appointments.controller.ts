@@ -29,7 +29,6 @@ export class AppointmentsController {
     @Body() createAppointmentDto: CreateAppointmentDto,
     @Req() request: Request & { user: User },
   ) {
-    console.log(createAppointmentDto);
     const user = request.user;
     return this.appointmentsService.create(createAppointmentDto, user);
   }

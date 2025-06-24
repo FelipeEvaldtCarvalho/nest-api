@@ -8,6 +8,7 @@ import {
   UpdateChronologicalCycleDto,
   UpdateOrderDto,
 } from './dto';
+import { formatDateToAPI } from '../helpers/date.helper';
 
 @Injectable()
 export class ChronologicalCycleService {
@@ -59,6 +60,21 @@ export class ChronologicalCycleService {
     });
   }
 
+  async findAllByCustomerId(customerId: number): Promise<any> {
+    const cycles = await this.chronologicalCycleRepository.find({
+      where: { customer: { id: customerId } },
+      order: { date: 'DESC', order: 'ASC' },
+    });
+    const result = {};
+    cycles.forEach((cycle) => {
+      if (!result[formatDateToAPI(cycle.date)]) {
+        result[formatDateToAPI(cycle.date)] = [];
+      }
+      result[formatDateToAPI(cycle.date)].push(cycle);
+    });
+    return result;
+  }
+
   async findOne(id: number): Promise<ChronologicalCycle> {
     const chronologicalCycle = await this.chronologicalCycleRepository.findOne({
       where: { id },
@@ -92,17 +108,6 @@ export class ChronologicalCycleService {
     });
 
     return results;
-  }
-
-  async findByCustomerId(customerId: number): Promise<ChronologicalCycle[]> {
-    return this.chronologicalCycleRepository.find({
-      where: { customer: { id: customerId } },
-      relations: ['customer'],
-      order: {
-        date: 'ASC',
-        order: 'ASC',
-      },
-    });
   }
 
   async update(

@@ -31,14 +31,14 @@ export class ChronologicalCycleController {
     return this.chronologicalCycleService.findAll();
   }
 
+  @Get('customer/:customerId')
+  findAllByCustomerId(@Param('customerId', ParseIntPipe) customerId: number) {
+    return this.chronologicalCycleService.findAllByCustomerId(customerId);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.chronologicalCycleService.findOne(id);
-  }
-
-  @Get('customer/:customerId')
-  findByCustomerId(@Param('customerId', ParseIntPipe) customerId: number) {
-    return this.chronologicalCycleService.findByCustomerId(customerId);
   }
 
   @Get('customer/:customerId/date/:date')
