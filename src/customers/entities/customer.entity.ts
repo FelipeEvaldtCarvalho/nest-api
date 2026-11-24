@@ -1,7 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  Unique,
+  Index,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
+// O mesmo CPF pode existir para operadores diferentes, mas não duas vezes para o mesmo operador.
 @Entity()
+@Unique('UQ_customer_user_document', ['user', 'document'])
 export class Customer {
   @PrimaryGeneratedColumn()
   id: number;
@@ -9,7 +18,7 @@ export class Customer {
   @Column()
   name: string;
 
-  @Column({ unique: true, nullable: true })
+  @Column({ nullable: true })
   document: string;
 
   @Column({ type: 'date', nullable: true })
@@ -21,6 +30,10 @@ export class Customer {
   @Column({ nullable: true })
   phone: string;
 
-  @ManyToOne(() => User, (user) => user.customers, { onDelete: 'CASCADE' })
+  @Index()
+  @ManyToOne(() => User, (user) => user.customers, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
   user: User;
 }

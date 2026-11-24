@@ -2,7 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CounselingData } from './entities';
-import { CreateCounselingDataDto, UpdateCounselingDataDto } from './dto';
+import { UpdateCounselingDataDto } from './dto';
+import { Customer } from '../customers/entities/customer.entity';
+import { AuthUser } from '../auth/auth-user';
+
+const EDITABLE_FIELDS = [
+  'reason',
+  'symptomsTime',
+  'dailyLife',
+  'hasHadTherapy',
+  'expectations',
+] as const;
 
 @Injectable()
 export class CounselingService {
@@ -11,80 +21,38 @@ export class CounselingService {
     private counselingDataRepository: Repository<CounselingData>,
   ) {}
 
-  async createCounselingData(customer: any): Promise<CounselingData> {
-    const counselingData = this.counselingDataRepository.create({
-      customer,
-    });
-    return this.counselingDataRepository.save(counselingData);
-  }
-
-  async create(
-    createCounselingDataDto: CreateCounselingDataDto,
-  ): Promise<CounselingData> {
-    const counselingData = this.counselingDataRepository.create(
-      createCounselingDataDto,
+  // Chamado ao cadastrar o cliente: toda ficha nasce com a entrevista vazia.
+  createCounselingData(customer: Customer): Promise<CounselingData> {
+    return this.counselingDataRepository.save(
+      this.counselingDataRepository.create({ customer }),
     );
-    return this.counselingDataRepository.save(counselingData);
   }
 
-  async findAll(): Promise<CounselingData[]> {
-    return this.counselingDataRepository.find({
-      relations: ['customer'],
-    });
-  }
-
-  async findOne(id: number): Promise<CounselingData> {
+  async findByCustomerId(customerId: number, user: AuthUser): Promise<CounselingData> {
     const counselingData = await this.counselingDataRepository.findOne({
-      where: { id },
-      relations: ['customer'],
+      where: { customer: { id: customerId, user: { id: user.id } } },
+      relations: { customer: true },
     });
 
     if (!counselingData) {
-      throw new NotFoundException(`Counseling data with ID ${id} not found`);
+      throw new NotFoundException('Dados de aconselhamento não encontrados');
     }
 
     return counselingData;
-  }
-
-  async findByCustomerId(customerId: number): Promise<CounselingData> {
-    const counselingData = await this.counselingDataRepository.findOne({
-      where: { customer: { id: customerId } },
-      relations: ['customer'],
-    });
-
-    if (!counselingData) {
-      throw new NotFoundException(
-        `Counseling data for customer with ID ${customerId} not found`,
-      );
-    }
-
-    return counselingData;
-  }
-
-  async update(
-    id: number,
-    updateCounselingDataDto: UpdateCounselingDataDto,
-  ): Promise<CounselingData> {
-    const counselingData = await this.findOne(id);
-
-    Object.assign(counselingData, updateCounselingDataDto);
-
-    return this.counselingDataRepository.save(counselingData);
   }
 
   async updateByCustomerId(
     customerId: number,
-    updateCounselingDataDto: UpdateCounselingDataDto,
+    dto: UpdateCounselingDataDto,
+    user: AuthUser,
   ): Promise<CounselingData> {
-    const counselingData = await this.findByCustomerId(customerId);
+    const counselingData = await this.findByCustomerId(customerId, user);
 
-    Object.assign(counselingData, updateCounselingDataDto);
+    // Só os campos da entrevista: o vínculo com o cliente nunca muda por aqui.
+    for (const field of EDITABLE_FIELDS) {
+      if (dto[field] !== undefined) counselingData[field] = dto[field];
+    }
 
     return this.counselingDataRepository.save(counselingData);
-  }
-
-  async remove(id: number): Promise<void> {
-    const counselingData = await this.findOne(id);
-    await this.counselingDataRepository.remove(counselingData);
   }
 }

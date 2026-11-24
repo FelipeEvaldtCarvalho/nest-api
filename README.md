@@ -1,73 +1,41 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Mind Flux API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS + TypeORM + PostgreSQL (Neon). Deploy no Render.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Installation
+## Rodar localmente
 
 ```bash
-$ pnpm install
+cp .env.example .env   # preencha DATABASE_URL e JWT_SECRET
+pnpm install
+pnpm start:dev
 ```
 
-## Running the app
+As migrations pendentes rodam sozinhas quando o app sobe (`migrationsRun`).
 
-```bash
-# development
-$ pnpm run start
+## Banco e migrations
 
-# watch mode
-$ pnpm run start:dev
+- O schema é controlado **só por migrations** (`src/database/migrations`); `synchronize` fica desligado.
+- Alterou uma entidade? Gere a migration e faça commit dela junto:
+  ```bash
+  pnpm migration:generate   # depois renomeie o arquivo gerado para algo descritivo
+  pnpm migration:run
+  ```
+- A migration `SeedAdmin` cria a primeira conta admin a partir de `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
 
-# production mode
-$ pnpm run start:prod
-```
+## Perfis
 
-## Test
+- **admin**: gerencia operadores em `/users` (criar, editar, desativar, excluir) e também atende clientes.
+- **operator**: só enxerga os próprios clientes, fichas, ciclos e agendamentos.
 
-```bash
-# unit tests
-$ pnpm run test
+Não há cadastro público: contas são criadas pelo admin.
 
-# e2e tests
-$ pnpm run test:e2e
+## Variáveis de ambiente
 
-# test coverage
-$ pnpm run test:cov
-```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+| Variável | Uso |
+|---|---|
+| `DATABASE_URL` | connection string do Neon |
+| `JWT_SECRET` | segredo dos tokens |
+| `JWT_EXPIRATION` | validade do token (padrão `1d`) |
+| `CORS_ALLOWED_ORIGINS` | URLs do front, separadas por vírgula |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | só para a migration `SeedAdmin` |
+| `DB_SSL` | `false` apenas para Postgres local sem SSL |

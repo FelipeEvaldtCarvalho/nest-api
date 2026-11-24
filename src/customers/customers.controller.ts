@@ -8,11 +8,10 @@ import {
   Put,
   ParseIntPipe,
   UseGuards,
-  Req,
+  HttpCode,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Request } from 'express';
-import { User } from 'src/users/entities/user.entity';
+import { AuthUser, CurrentUser } from '../auth/auth-user';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -23,35 +22,32 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Post()
-  create(
-    @Body() createCustomerDto: CreateCustomerDto,
-    @Req() request: Request & { user: User },
-  ) {
-    const user = request.user;
-    return this.customersService.create(createCustomerDto, user);
+  create(@Body() dto: CreateCustomerDto, @CurrentUser() user: AuthUser) {
+    return this.customersService.create(dto, user);
   }
 
   @Get()
-  findAll(@Req() request: Request) {
-    const user = request.user as User;
+  findAll(@CurrentUser() user: AuthUser) {
     return this.customersService.findAll(user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.customersService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
+    return this.customersService.findOne(id, user);
   }
 
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateCustomerDto: UpdateCustomerDto,
+    @Body() dto: UpdateCustomerDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.customersService.update(id, updateCustomerDto);
+    return this.customersService.update(id, dto, user);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.customersService.remove(id);
+  @HttpCode(204)
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
+    return this.customersService.remove(id, user);
   }
 }

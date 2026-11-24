@@ -8,8 +8,8 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { CreateDto } from './dto/create.dto';
 
+// Não existe mais cadastro público: operadores são criados pelo admin em POST /users.
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -18,19 +18,7 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     const { email, password } = loginDto;
     const user = await this.authService.validateUser(email, password);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
     return this.authService.login(user);
-  }
-
-  @Post('create')
-  async create(@Body() createDto: CreateDto) {
-    const token = await this.authService.createUser(createDto);
-    if (!token) {
-      throw new UnauthorizedException('User creation failed');
-    }
-    return token;
   }
 
   @Get('verify-token')
@@ -41,13 +29,11 @@ export class AuthController {
     const token = authHeader.replace('Bearer ', '');
     const user = await this.authService.verifyToken(token);
 
-    if (!user) {
+    if (!user || !user.isActive) {
       throw new UnauthorizedException('Token inválido');
     }
 
-    delete user.password;
-    delete user.isActive;
-
-    return user;
+    const { isActive: _, ...result } = user;
+    return result;
   }
 }

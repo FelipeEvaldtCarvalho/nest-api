@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index } from 'typeorm';
 import { Customer } from '../../customers/entities/customer.entity';
 
 @Entity('chronological_cycle')
@@ -6,12 +6,13 @@ export class ChronologicalCycle {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Customer, { onDelete: 'CASCADE' })
+  @Index()
+  @ManyToOne(() => Customer, { onDelete: 'CASCADE', nullable: false })
   customer: Customer;
 
   // Data
   @Column({ type: 'date' })
-  date: Date;
+  date: string;
 
   // Ciclo
   @Column({ type: 'text', nullable: true })

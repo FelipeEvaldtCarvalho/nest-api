@@ -12,7 +12,7 @@ export class CounselingData {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @OneToOne(() => Customer, { onDelete: 'CASCADE' })
+  @OneToOne(() => Customer, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn()
   customer: Customer;
 
