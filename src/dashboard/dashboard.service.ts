@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { CustomersService } from 'src/customers/customers.service';
+import { CustomersService } from '../customers/customers.service';
+import { AuthUser } from '../auth/auth-user';
 
 @Injectable()
 export class DashboardService {
   constructor(private readonly customersService: CustomersService) {}
 
-  async getDashboardData(user: any) {
-    const allCustomers = await this.customersService.findAll(user);
+  async getDashboardData(user: AuthUser) {
     return {
-      customers: allCustomers.length,
+      customers: await this.customersService.countByUser(user),
     };
   }
 }

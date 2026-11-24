@@ -17,7 +17,11 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts src/database/migrations/Migration",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -29,10 +33,10 @@
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/typeorm": "^11.0.0",
     "bcrypt": "^6.0.0",
-    "dayjs": "^1.11.13",
-    "mysql2": "^3.14.1",
+    "dotenv": "^18.0.10",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pg": "^8.23.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.24"
@@ -46,6 +50,7 @@
     "@types/jest": "^29.5.2",
     "@types/node": "^20.3.1",
     "@types/passport-jwt": "^4.0.1",
+    "@types/pg": "^8.23.1",
     "@types/supertest": "^2.0.12",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",

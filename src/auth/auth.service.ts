@@ -1,7 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { CreateDto } from './dto/create.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -11,9 +10,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) {
+  async validateUser(email: string, password: string) {
+    const user = await this.usersService.findByEmailWithPassword(email);
+    if (!user || !password) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -22,30 +21,25 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const { password: _, ...result } = user; // Exclude password from the result
+    if (!user.isActive) {
+      throw new UnauthorizedException('Usuário desativado');
+    }
+
+    const { password: _, ...result } = user;
     return result;
   }
 
-  async login(user: any) {
-    const payload = { email: user.email, sub: user.id };
+  async login(user: { id: number; email: string; role: string }) {
+    const payload = { email: user.email, sub: user.id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
-    };
-  }
-
-  async createUser(payload: CreateDto) {
-    const user = await this.usersService.create(payload);
-    const jwtPayload = { email: user.email, sub: user.id };
-
-    return {
-      access_token: this.jwtService.sign(jwtPayload),
     };
   }
 
   async verifyToken(token: string) {
     try {
       const payload = await this.jwtService.verifyAsync(token);
-      return this.usersService.findOne(payload.sub);
+      return await this.usersService.findOne(payload.sub);
     } catch (err) {
       return null;
     }

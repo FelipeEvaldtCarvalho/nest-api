@@ -1,14 +1,27 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Appointment } from './entities/appointment.entity';
 import { CreateAppointmentDto } from './dto';
-import { User } from 'src/users/entities/user.entity';
-import { Customer } from 'src/customers/entities/customer.entity';
+import { Customer } from '../customers/entities/customer.entity';
+import { AuthUser } from '../auth/auth-user';
+import { assertIsoDate } from '../helpers/date.helper';
+
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+const toResponse = (appointment: Appointment) => ({
+  id: appointment.id,
+  date: appointment.date,
+  time: appointment.time,
+  customer: {
+    id: appointment.customer?.id,
+    name: appointment.customer?.name,
+  },
+});
 
 @Injectable()
 export class AppointmentsService {
@@ -19,128 +32,69 @@ export class AppointmentsService {
     private customerRepository: Repository<Customer>,
   ) {}
 
-  async create(
-    createAppointmentDto: CreateAppointmentDto,
-    user: User,
-  ): Promise<any> {
+  async create(dto: CreateAppointmentDto, user: AuthUser) {
     const customer = await this.customerRepository.findOne({
-      where: { id: createAppointmentDto.customerId },
-      relations: ['user'],
+      where: { id: dto.customerId, user: { id: user.id } },
     });
     if (!customer) {
       throw new NotFoundException('Cliente não encontrado');
     }
-    if (customer.user.id !== user.id) {
-      throw new UnauthorizedException(
-        'Você não tem permissão para criar um agendamento para este cliente',
-      );
-    }
-    const appointmentData: Partial<Appointment> = {
-      customer,
-      date: new Date(createAppointmentDto.date),
-      time: createAppointmentDto.time,
-    };
-    const appointment = this.appointmentRepository.create(appointmentData);
-    const savedAppointment = await this.appointmentRepository.save(appointment);
-    // Retorna apenas os campos necessários
-    return {
-      id: savedAppointment.id,
-      date: savedAppointment.date,
-      time: savedAppointment.time,
-      customer: {
-        id: customer.id,
-        name: customer.name,
-      },
-    };
-  }
-
-  async findByMonth(monthYear: string, userId: number): Promise<any[]> {
-    // Extrai mês e ano do formato MM-AAAA
-    const [month, year] = monthYear.split('-').map(Number);
-
-    if (!month || !year || month < 1 || month > 12) {
-      throw new Error(
-        'Formato inválido. Use o formato MM-AAAA (exemplo: 03-2024)',
-      );
+    if (!TIME_PATTERN.test(dto.time ?? '')) {
+      throw new BadRequestException('Horário inválido. Use HH:mm (exemplo: 14:30)');
     }
 
-    // Cria data inicial (primeiro dia do mês)
-    const startDate = new Date(year, month - 1, 1);
-    startDate.setHours(0, 0, 0, 0);
-
-    // Cria data final (primeiro dia do próximo mês)
-    const endDate = new Date(year, month, 1);
-    endDate.setHours(0, 0, 0, 0);
-
-    const appointments = await this.appointmentRepository
-      .createQueryBuilder('appointment')
-      .leftJoinAndSelect('appointment.customer', 'customer')
-      .leftJoinAndSelect('customer.user', 'user')
-      .where('appointment.date >= :startDate', { startDate })
-      .andWhere('appointment.date < :endDate', { endDate })
-      .andWhere('user.id = :userId', { userId })
-      .orderBy('appointment.date', 'ASC')
-      .addOrderBy('appointment.time', 'ASC')
-      .getMany();
-
-    // Formata a resposta mantendo o formato original da data e hora
-    return appointments.map((appointment) => {
-      const appointmentDate = new Date(appointment.date);
-      return {
-        id: appointment.id,
-        date: appointmentDate.toISOString().slice(0, 10), // Formato YYYY-MM-DD
-        time: appointment.time,
-        customer: {
-          id: appointment.customer?.id,
-          name: appointment.customer?.name,
-        },
-      };
-    });
+    const saved = await this.appointmentRepository.save(
+      this.appointmentRepository.create({
+        customer,
+        date: assertIsoDate(dto.date),
+        time: dto.time,
+      }),
+    );
+    return toResponse(saved);
   }
 
-  async findByCustomerId(customerId: number, userId: number): Promise<any[]> {
+  // monthYear no formato MM-AAAA. Compara só datas, sem depender do fuso do servidor.
+  async findByMonth(monthYear: string, user: AuthUser) {
+    const match = /^(\d{2})-(\d{4})$/.exec(monthYear ?? '');
+    const month = match ? Number(match[1]) : 0;
+    if (!match || month < 1 || month > 12) {
+      throw new BadRequestException('Formato inválido. Use MM-AAAA (exemplo: 03-2024)');
+    }
+    const year = Number(match[2]);
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const pad = (n: number) => String(n).padStart(2, '0');
+
     const appointments = await this.appointmentRepository.find({
-      where: { customer: { id: customerId, user: { id: userId } } },
-      relations: ['customer', 'customer.user'],
-    });
-
-    return appointments.map((appointment) => ({
-      id: appointment.id,
-      date: appointment.date,
-      time: appointment.time,
-      customer: {
-        id: appointment.customer?.id,
-        name: appointment.customer?.name,
+      where: {
+        date: Between(`${year}-${pad(month)}-01`, `${year}-${pad(month)}-${pad(lastDay)}`),
+        customer: { user: { id: user.id } },
       },
-    }));
+      relations: ['customer'],
+      order: { date: 'ASC', time: 'ASC' },
+    });
+    return appointments.map(toResponse);
   }
 
-  async remove(id: number, userId: number): Promise<any> {
-    const appointment = await this.appointmentRepository.findOne({
-      where: { id },
-      relations: ['customer', 'customer.user'],
+  async findByCustomerId(customerId: number, user: AuthUser) {
+    const appointments = await this.appointmentRepository.find({
+      where: { customer: { id: customerId, user: { id: user.id } } },
+      relations: ['customer'],
+      order: { date: 'ASC', time: 'ASC' },
     });
+    return appointments.map(toResponse);
+  }
 
+  async remove(id: number, user: AuthUser) {
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id, customer: { user: { id: user.id } } },
+      relations: ['customer'],
+    });
     if (!appointment) {
-      throw new NotFoundException(`Agendamento não encontrado`);
+      throw new NotFoundException('Agendamento não encontrado');
     }
 
-    if (appointment.customer.user.id !== userId) {
-      throw new UnauthorizedException(
-        'Você não tem permissão para remover este agendamento',
-      );
-    }
-
+    const response = toResponse(appointment);
     await this.appointmentRepository.remove(appointment);
-
-    return {
-      id: appointment.id,
-      date: appointment.date,
-      time: appointment.time,
-      customer: {
-        id: appointment.customer?.id,
-        name: appointment.customer?.name,
-      },
-    };
+    return response;
   }
 }

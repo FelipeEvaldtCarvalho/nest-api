@@ -1,61 +1,37 @@
 import {
   Controller,
   Get,
-  Post,
   Body,
   Patch,
   Param,
-  Delete,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthUser, CurrentUser } from '../auth/auth-user';
 import { CounselingService } from './counseling.service';
-import { CreateCounselingDataDto, UpdateCounselingDataDto } from './dto';
+import { UpdateCounselingDataDto } from './dto';
 
+// A ficha de aconselhamento é criada junto com o cliente e acessada sempre por ele.
+@UseGuards(JwtAuthGuard)
 @Controller('counseling')
 export class CounselingController {
   constructor(private readonly counselingService: CounselingService) {}
 
-  @Post()
-  create(@Body() createCounselingDataDto: CreateCounselingDataDto) {
-    return this.counselingService.create(createCounselingDataDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.counselingService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.counselingService.findOne(id);
-  }
-
   @Get('customer/:customerId')
-  findByCustomerId(@Param('customerId', ParseIntPipe) customerId: number) {
-    return this.counselingService.findByCustomerId(customerId);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateCounselingDataDto: UpdateCounselingDataDto,
+  findByCustomerId(
+    @Param('customerId', ParseIntPipe) customerId: number,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.counselingService.update(id, updateCounselingDataDto);
+    return this.counselingService.findByCustomerId(customerId, user);
   }
 
   @Patch('customer/:customerId')
   updateByCustomerId(
     @Param('customerId', ParseIntPipe) customerId: number,
-    @Body() updateCounselingDataDto: UpdateCounselingDataDto,
+    @Body() dto: UpdateCounselingDataDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.counselingService.updateByCustomerId(
-      customerId,
-      updateCounselingDataDto,
-    );
-  }
-
-  @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.counselingService.remove(id);
+    return this.counselingService.updateByCustomerId(customerId, dto, user);
   }
 }

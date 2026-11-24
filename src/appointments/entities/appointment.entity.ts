@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index } from 'typeorm';
 import { Customer } from '../../customers/entities/customer.entity';
 
 @Entity()
@@ -6,11 +6,14 @@ export class Appointment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Customer, { onDelete: 'CASCADE' })
+  @Index()
+  @ManyToOne(() => Customer, { onDelete: 'CASCADE', nullable: false })
   customer: Customer;
 
-  @Column()
-  date: Date;
+  // 'YYYY-MM-DD'. Antes era timestamp e a busca por mês dependia do fuso do servidor.
+  @Index()
+  @Column({ type: 'date' })
+  date: string;
 
   @Column()
   time: string;

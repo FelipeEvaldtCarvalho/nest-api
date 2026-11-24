@@ -8,81 +8,78 @@ import {
   Delete,
   ParseIntPipe,
   Query,
+  UseGuards,
+  HttpCode,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthUser, CurrentUser } from '../auth/auth-user';
 import { ChronologicalCycleService } from './chronological-cycle.service';
 import {
   CreateChronologicalCycleDto,
   UpdateChronologicalCycleDto,
   UpdateOrderDto,
 } from './dto';
+
+@UseGuards(JwtAuthGuard)
 @Controller('chronological-cycle')
 export class ChronologicalCycleController {
-  constructor(
-    private readonly chronologicalCycleService: ChronologicalCycleService,
-  ) {}
+  constructor(private readonly service: ChronologicalCycleService) {}
 
   @Post()
-  create(@Body() createChronologicalCycleDto: CreateChronologicalCycleDto) {
-    return this.chronologicalCycleService.create(createChronologicalCycleDto);
+  create(@Body() dto: CreateChronologicalCycleDto, @CurrentUser() user: AuthUser) {
+    return this.service.create(dto, user);
   }
 
-  @Get()
-  findAll() {
-    return this.chronologicalCycleService.findAll();
+  // Precisa vir antes de ':id' para não ser capturada como id.
+  @Post('order')
+  @HttpCode(204)
+  updateOrder(@Body() items: UpdateOrderDto[], @CurrentUser() user: AuthUser) {
+    return this.service.updateOrder(items, user);
   }
 
   @Get('customer/:customerId')
-  findAllByCustomerId(@Param('customerId', ParseIntPipe) customerId: number) {
-    return this.chronologicalCycleService.findAllByCustomerId(customerId);
-  }
-
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.chronologicalCycleService.findOne(id);
+  findAllByCustomerId(
+    @Param('customerId', ParseIntPipe) customerId: number,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.service.findAllByCustomerId(customerId, user);
   }
 
   @Get('customer/:customerId/date/:date')
   findByCustomerIdAndDate(
     @Param('customerId', ParseIntPipe) customerId: number,
     @Param('date') date: string,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.chronologicalCycleService.findByCustomerIdAndDate(
-      customerId,
-      date,
-    );
+    return this.service.findByCustomerIdAndDate(customerId, date, user);
   }
 
   @Get('next-order/:customerId')
   async getNextOrder(
     @Param('customerId', ParseIntPipe) customerId: number,
+    @CurrentUser() user: AuthUser,
     @Query('date') date?: string,
   ) {
-    const dateParam = date || undefined;
-    const nextOrder = await this.chronologicalCycleService.getNextOrder(
-      customerId,
-      dateParam,
-    );
-    return { nextOrder };
+    return { nextOrder: await this.service.getNextOrder(customerId, user, date || undefined) };
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
+    return this.service.findOne(id, user);
   }
 
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateChronologicalCycleDto: UpdateChronologicalCycleDto,
+    @Body() dto: UpdateChronologicalCycleDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.chronologicalCycleService.update(
-      id,
-      updateChronologicalCycleDto,
-    );
-  }
-
-  @Post('order')
-  async updateOrder(@Body() cicles: UpdateOrderDto[]) {
-    return this.chronologicalCycleService.updateOrder(cicles);
+    return this.service.update(id, dto, user);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.chronologicalCycleService.remove(id);
+  @HttpCode(204)
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
+    return this.service.remove(id, user);
   }
 }

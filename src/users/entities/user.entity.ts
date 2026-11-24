@@ -1,5 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  CreateDateColumn,
+} from 'typeorm';
 import { Customer } from '../../customers/entities/customer.entity';
+
+export const USER_ROLES = ['admin', 'operator'] as const;
+export type UserRole = (typeof USER_ROLES)[number];
 
 @Entity()
 export class User {
@@ -9,7 +18,8 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  // select: false -> o hash nunca sai em consultas comuns; só quando pedido explicitamente.
+  @Column({ select: false })
   password: string;
 
   @Column({ nullable: true })
@@ -17,6 +27,12 @@ export class User {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ type: 'varchar', length: 20, default: 'operator' })
+  role: UserRole;
+
+  @CreateDateColumn()
+  createdAt: Date;
 
   @OneToMany(() => Customer, (customer) => customer.user)
   customers: Customer[];
