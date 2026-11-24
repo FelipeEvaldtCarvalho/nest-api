@@ -31,6 +31,7 @@ export class CounselingService {
   async findByCustomerId(customerId: number, user: AuthUser): Promise<CounselingData> {
     const counselingData = await this.counselingDataRepository.findOne({
       where: { customer: { id: customerId, user: { id: user.id } } },
+      relations: { customer: true },
     });
 
     if (!counselingData) {

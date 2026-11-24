@@ -11,7 +11,7 @@ import { Customer } from '../customers/entities/customer.entity';
 import { AuthUser } from '../auth/auth-user';
 import { assertIsoDate } from '../helpers/date.helper';
 
-const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+const TIME_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 
 const toResponse = (appointment: Appointment) => ({
   id: appointment.id,
@@ -39,7 +39,8 @@ export class AppointmentsService {
     if (!customer) {
       throw new NotFoundException('Cliente não encontrado');
     }
-    if (!TIME_PATTERN.test(dto.time ?? '')) {
+    const time = TIME_PATTERN.exec(dto.time ?? '');
+    if (!time) {
       throw new BadRequestException('Horário inválido. Use HH:mm (exemplo: 14:30)');
     }
 
@@ -47,7 +48,7 @@ export class AppointmentsService {
       this.appointmentRepository.create({
         customer,
         date: assertIsoDate(dto.date),
-        time: dto.time,
+        time: `${time[1].padStart(2, '0')}:${time[2]}`,
       }),
     );
     return toResponse(saved);
@@ -55,7 +56,7 @@ export class AppointmentsService {
 
   // monthYear no formato MM-AAAA. Compara só datas, sem depender do fuso do servidor.
   async findByMonth(monthYear: string, user: AuthUser) {
-    const match = /^(\d{2})-(\d{4})$/.exec(monthYear ?? '');
+    const match = /^(\d{1,2})-(\d{4})$/.exec(monthYear ?? '');
     const month = match ? Number(match[1]) : 0;
     if (!match || month < 1 || month > 12) {
       throw new BadRequestException('Formato inválido. Use MM-AAAA (exemplo: 03-2024)');
